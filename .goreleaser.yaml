@@ -1,0 +1,116 @@
+# via https://www.jvt.me/posts/2023/02/24/goreleaser-cgo-cross-compile/
+# # via https://gitlab.com/tanna.dev/dependency-management-data/blob/v0.3.1/.goreleaser.yaml
+env:
+  - CGO_ENABLED=1
+builds:
+  - id: strudel-local-serve-darwin-amd64
+    binary: strudel-local-serve
+    main: ./
+    goarch:
+      - amd64
+    goos:
+      - darwin
+    env:
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - -trimpath
+
+  - id: strudel-local-serve-darwin-arm64
+    binary: strudel-local-serve
+    main: ./
+    goarch:
+      - arm64
+    goos:
+      - darwin
+    env:
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    flags:
+      - -trimpath
+
+  - id: strudel-local-serve-linux-amd64
+    binary: strudel-local-serve
+    main: ./
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+    goarch:
+      - amd64
+    goos:
+      - linux
+    flags:
+      - -trimpath
+    ldflags:
+      - -extldflags "-lc -lrt -lpthread"
+
+  - id: strudel-local-serve-linux-arm64
+    binary: strudel-local-serve
+    main: ./
+    goarch:
+      - arm64
+    goos:
+      - linux
+    env:
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    flags:
+      - -trimpath
+    ldflags:
+      - -extldflags "-lc -lrt -lpthread"
+
+  - id: strudel-local-serve-windows-amd64
+    binary: strudel-local-serve
+    main: ./
+    goarch:
+      - amd64
+    goos:
+      - windows
+    env:
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
+    flags:
+      - -trimpath
+      - -buildmode=exe
+    ldflags:
+      - -extldflags "-static-libstdc++ -static-libgcc"
+
+universal_binaries:
+  - id: strudel-local-serve-darwin-universal
+    ids:
+      - strudel-local-serve-darwin-amd64
+      - strudel-local-serve-darwin-arm64
+    replace: true
+    name_template: "strudel-local-serve"
+archives:
+  - id: w/version
+    builds:
+      - strudel-local-serve-darwin-universal
+      - strudel-local-serve-linux-amd64
+      - strudel-local-serve-linux-arm64
+      - strudel-local-serve-windows-amd64
+    name_template: "strudel-local-serve_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+    format: zip
+    files:
+      - none*
+  - id: wo/version
+    builds:
+      - strudel-local-serve-darwin-universal
+      - strudel-local-serve-linux-amd64
+      - strudel-local-serve-linux-arm64
+      - strudel-local-serve-windows-amd64
+    name_template: "strudel-local-serve_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: false
+    format: zip
+    files:
+      - none*
+
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+gitlab_urls:
+  use_package_registry: true

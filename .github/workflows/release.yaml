@@ -1,0 +1,49 @@
+# .github/workflows/release.yml
+name: goreleaser
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+  # packages: write
+  # issues: write
+  # id-token: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: setup release environment
+        run: |-
+          echo 'GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}' > .release-env
+
+      # More assembly might be required: Docker logins, GPG, etc.
+      # It all depends on your needs.
+      - name: Run GoReleaser
+        env:
+          PACKAGE_NAME: github.com/anosatsuk124/strudel-local-serve
+        run: |
+          docker build -t goreleaser-cross -f Dockerfile .
+          docker run \
+            --rm \
+            -e CGO_ENABLED=1 \
+            --env-file .release-env \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v `pwd`:"/go/src/${{ env.PACKAGE_NAME }}" \
+            -v `pwd`/sysroot:/sysroot \
+            -w "/go/src/${{ env.PACKAGE_NAME }}" \
+            goreleaser-cross \
+            release --clean
